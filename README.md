@@ -61,6 +61,10 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+### License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ---
 
 ## 日本語
@@ -121,3 +125,7 @@ Next.jsについてさらに詳しく知るには、以下のリソースを参�
 Next.jsアプリをデプロイする最も簡単な方法は、Next.jsの作成者である[Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme)を使用することです。
 
 詳細については、[Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) を参照してください。
+
+### ライセンス
+
+このプロジェクトはMITライセンスの下でライセンスされています。詳細については[LICENSE](LICENSE)ファイルを参照してください。
