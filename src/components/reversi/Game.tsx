@@ -90,18 +90,32 @@ const Game: React.FC = () => {
     const whiteMoves = calculateValidMoves('white', currentBoard);
 
     if (blackMoves.length === 0 && whiteMoves.length === 0) {
-      setGameOver(true);
-      if (blackScore > whiteScore) {
-        setWinner('black');
-      } else if (whiteScore > blackScore) {
-        setWinner('white');
-      } else {
-        setWinner('draw');
+      if (!gameOver) { // Prevent saving multiple times if already game over
+        setGameOver(true);
+        let finalWinner: Player | 'draw';
+        if (blackScore > whiteScore) {
+          finalWinner = 'black';
+        } else if (whiteScore > blackScore) {
+          finalWinner = 'white';
+        } else {
+          finalWinner = 'draw';
+        }
+        setWinner(finalWinner);
+
+        // Save game result to localStorage
+        const gameResult = {
+          date: new Date().toLocaleString(),
+          blackScore,
+          whiteScore,
+          winner: finalWinner,
+        };
+        const storedResults = JSON.parse(localStorage.getItem('reversiResults') || '[]');
+        localStorage.setItem('reversiResults', JSON.stringify([...storedResults, gameResult]));
       }
       return true;
     }
     return false;
-  }, [calculateValidMoves, blackScore, whiteScore]);
+  }, [calculateValidMoves, blackScore, whiteScore, gameOver]);
 
   const makeComputerMove = useCallback(() => {
     setIsComputerThinking(true);
@@ -227,6 +241,12 @@ const Game: React.FC = () => {
           >
             もう一度プレイ
           </button>
+          <a
+            href="/reversi/result"
+            className="ml-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            対戦成績を見る
+          </a>
         </div>
       )}
     </div>
