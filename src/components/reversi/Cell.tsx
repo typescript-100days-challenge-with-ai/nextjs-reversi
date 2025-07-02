@@ -3,13 +3,15 @@ import React from 'react';
 interface CellProps {
   value: 'empty' | 'black' | 'white';
   onClick: () => void;
+  isClickable?: boolean;
 }
 
-const Cell: React.FC<CellProps> = ({ value, onClick }) => {
+const Cell: React.FC<CellProps> = ({ value, onClick, isClickable = false }) => {
   const cellClasses = `
     w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16
-    border border-gray-400 flex items-center justify-center cursor-pointer
-    ${value === 'empty' ? 'bg-green-600 hover:bg-green-700' : 'bg-green-600'}
+    border border-gray-400 flex items-center justify-center
+    ${value === 'empty' ? 'bg-green-600' : 'bg-green-600'}
+    ${isClickable ? 'cursor-pointer hover:bg-green-700' : 'cursor-not-allowed'}
   `;
 
   const pieceClasses = `

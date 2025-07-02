@@ -41,7 +41,7 @@ const Game: React.FC = () => {
     const flippable: { row: number; col: number }[] = [];
 
     for (const [dr, dc] of directions) {
-      let tempFlippable: { row: number; col: number }[] = [];
+      const tempFlippable: { row: number; col: number }[] = [];
       let row = r + dr;
       let col = c + dc;
 

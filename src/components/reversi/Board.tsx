@@ -21,6 +21,7 @@ const Board: React.FC<BoardProps> = ({ board, onCellClick, validMoves }) => {
               key={`${rowIndex}-${colIndex}`}
               value={cell}
               onClick={() => onCellClick(rowIndex, colIndex)}
+              isClickable={isValidMove(rowIndex, colIndex)}
             />
           ))}
         </React.Fragment>
