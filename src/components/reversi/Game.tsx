@@ -27,6 +27,8 @@ const Game: React.FC = () => {
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<Player | 'draw' | null>(null);
   const [validMoves, setValidMoves] = useState<{ row: number; col: number }[]>([]);
+  const [gameMode, setGameMode] = useState<'player-vs-player' | 'player-vs-computer' | null>(null);
+  const [isComputerThinking, setIsComputerThinking] = useState(false);
 
   const getOpponent = (player: Player): Player => (player === 'black' ? 'white' : 'black');
 
@@ -101,7 +103,42 @@ const Game: React.FC = () => {
     return false;
   }, [calculateValidMoves, blackScore, whiteScore]);
 
+  const makeComputerMove = useCallback(() => {
+    setIsComputerThinking(true);
+    setTimeout(() => {
+      const moves = calculateValidMoves(currentPlayer, board);
+      if (moves.length > 0) {
+        // Simple AI: choose the move that flips the most stones
+        let bestMove: { row: number; col: number } | null = null;
+        let maxFlippable = -1;
+
+        for (const move of moves) {
+          const flippable = getFlippableStones(move.row, move.col, currentPlayer, board);
+          if (flippable.length > maxFlippable) {
+            maxFlippable = flippable.length;
+            bestMove = move;
+          }
+        }
+
+        if (bestMove) {
+          const flippable = getFlippableStones(bestMove.row, bestMove.col, currentPlayer, board);
+          const newBoard = board.map(r => [...r]);
+          newBoard[bestMove.row][bestMove.col] = currentPlayer;
+          flippable.forEach(({ row, col }) => {
+            newBoard[row][col] = currentPlayer;
+          });
+          setBoard(newBoard);
+          updateScores(newBoard);
+          setCurrentPlayer(getOpponent(currentPlayer));
+        }
+      }
+      setIsComputerThinking(false);
+    }, 1000); // Simulate thinking time
+  }, [board, currentPlayer, calculateValidMoves, getFlippableStones, updateScores]);
+
   useEffect(() => {
+    if (!gameMode) return; // Don't run game logic until mode is selected
+
     const moves = calculateValidMoves(currentPlayer, board);
     setValidMoves(moves);
 
@@ -114,11 +151,14 @@ const Game: React.FC = () => {
         alert(`${currentPlayer === 'black' ? '黒' : '白'}は置ける場所がないため、パスします。`);
         setCurrentPlayer(opponent);
       }
+    } else if (gameMode === 'player-vs-computer' && currentPlayer === 'white' && !gameOver) {
+      // Computer's turn (assuming white is computer)
+      makeComputerMove();
     }
-  }, [board, currentPlayer, calculateValidMoves, checkGameOver]);
+  }, [board, currentPlayer, calculateValidMoves, checkGameOver, gameMode, gameOver, makeComputerMove]);
 
   const handleCellClick = (row: number, col: number) => {
-    if (gameOver) return;
+    if (gameOver || (gameMode === 'player-vs-computer' && currentPlayer === 'white') || isComputerThinking) return;
 
     const flippable = getFlippableStones(row, col, currentPlayer, board);
 
@@ -143,13 +183,39 @@ const Game: React.FC = () => {
     setWhiteScore(2);
     setGameOver(false);
     setWinner(null);
+    setIsComputerThinking(false);
   };
+
+  if (!gameMode) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-3xl font-bold mb-8">リバーシ</h1>
+        <div className="space-y-4">
+          <button
+            onClick={() => setGameMode('player-vs-player')}
+            className="px-6 py-3 bg-green-500 text-white text-xl rounded hover:bg-green-600"
+          >
+            プレイヤー対プレイヤー
+          </button>
+          <button
+            onClick={() => setGameMode('player-vs-computer')}
+            className="px-6 py-3 bg-purple-500 text-white text-xl rounded hover:bg-purple-600 ml-4"
+          >
+            プレイヤー対コンピュータ
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center">
       <div className="mb-4 text-xl">
         <p>現在のプレイヤー: {currentPlayer === 'black' ? '黒' : '白'}</p>
         <p>黒: {blackScore} 白: {whiteScore}</p>
+        {gameMode === 'player-vs-computer' && currentPlayer === 'white' && isComputerThinking && (
+          <p className="text-red-500">コンピュータが思考中...</p>
+        )}
       </div>
       <Board board={board} onCellClick={handleCellClick} validMoves={validMoves} />
       {gameOver && (
