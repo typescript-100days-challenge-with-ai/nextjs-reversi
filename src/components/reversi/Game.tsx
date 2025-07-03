@@ -2,27 +2,25 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Board from './Board';
+import { calculateValidMovesAI, chooseBestMove, getFlippableStonesAI } from '../../utils/reversiAI';
 
-type Player = 'black' | 'white';
-type CellValue = Player | 'empty';
-type BoardState = CellValue[][];
+export type Player = 'black' | 'white';
+export type CellValue = Player | 'empty';
+export type BoardState = CellValue[][];
 
-interface Coordinate {
+export interface Coordinate {
   row: number;
   col: number;
 }
 
-const initialBoard: BoardState = Array(8).fill(null).map(() => Array(8).fill('empty'));
+export const BOARD_SIZE = 8;
+export const LOCAL_STORAGE_KEY = 'reversiResults';
+
+const initialBoard: BoardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill('empty'));
 initialBoard[3][3] = 'white';
 initialBoard[3][4] = 'black';
 initialBoard[4][3] = 'black';
 initialBoard[4][4] = 'white';
-
-const directions = [
-  [-1, -1], [-1, 0], [-1, 1],
-  [0, -1],           [0, 1],
-  [1, -1], [1, 0], [1, 1],
-];
 
 const Game: React.FC = () => {
   const [board, setBoard] = useState<BoardState>(initialBoard);
@@ -37,51 +35,20 @@ const Game: React.FC = () => {
 
   const getOpponent = (player: Player): Player => (player === 'black' ? 'white' : 'black');
 
-  const isValidPosition = (row: number, col: number): boolean => {
-    return row >= 0 && row < 8 && col >= 0 && col < 8;
-  };
 
   const getFlippableStones = useCallback((r: number, c: number, player: Player, currentBoard: BoardState): Coordinate[] => {
-    if (currentBoard[r][c] !== 'empty') return [];
-
-    const opponent = getOpponent(player);
-    const flippable: Coordinate[] = [];
-
-    for (const [dr, dc] of directions) {
-      const tempFlippable: Coordinate[] = [];
-      let row = r + dr;
-      let col = c + dc;
-
-      while (isValidPosition(row, col) && currentBoard[row][col] === opponent) {
-        tempFlippable.push({ row, col });
-        row += dr;
-        col += dc;
-      }
-
-      if (isValidPosition(row, col) && currentBoard[row][col] === player && tempFlippable.length > 0) {
-        flippable.push(...tempFlippable);
-      }
-    }
-    return flippable;
+    return getFlippableStonesAI(r, c, player, currentBoard);
   }, []);
 
   const calculateValidMoves = useCallback((player: Player, currentBoard: BoardState): Coordinate[] => {
-    const moves: Coordinate[] = [];
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        if (getFlippableStones(r, c, player, currentBoard).length > 0) {
-          moves.push({ row: r, col: c });
-        }
-      }
-    }
-    return moves;
-  }, [getFlippableStones]);
+    return calculateValidMovesAI(player, currentBoard);
+  }, []);
 
   const updateScores = useCallback((currentBoard: BoardState) => {
     let black = 0;
     let white = 0;
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
         if (currentBoard[r][c] === 'black') black++;
         else if (currentBoard[r][c] === 'white') white++;
       }
@@ -114,8 +81,8 @@ const Game: React.FC = () => {
           whiteScore,
           winner: finalWinner,
         };
-        const storedResults = JSON.parse(localStorage.getItem('reversiResults') || '[]');
-        localStorage.setItem('reversiResults', JSON.stringify([...storedResults, gameResult]));
+        const storedResults = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([...storedResults, gameResult]));
       }
       return true;
     }
@@ -125,35 +92,22 @@ const Game: React.FC = () => {
   const makeComputerMove = useCallback(() => {
     setIsComputerThinking(true);
     setTimeout(() => {
-      const moves = calculateValidMoves(currentPlayer, board);
-      if (moves.length > 0) {
-        // Simple AI: choose the move that flips the most stones
-        let bestMove: Coordinate | null = null;
-        let maxFlippable = -1;
+      const bestMove = chooseBestMove(currentPlayer, board);
 
-        for (const move of moves) {
-          const flippable = getFlippableStones(move.row, move.col, currentPlayer, board);
-          if (flippable.length > maxFlippable) {
-            maxFlippable = flippable.length;
-            bestMove = move;
-          }
-        }
-
-        if (bestMove) {
-          const flippable = getFlippableStones(bestMove.row, bestMove.col, currentPlayer, board);
-          const newBoard = board.map(r => [...r]);
-          newBoard[bestMove.row][bestMove.col] = currentPlayer;
-          flippable.forEach(({ row, col }) => {
-            newBoard[row][col] = currentPlayer;
-          });
-          setBoard(newBoard);
-          updateScores(newBoard);
-          setCurrentPlayer(getOpponent(currentPlayer));
-        }
+      if (bestMove) {
+        const flippable = getFlippableStones(bestMove.row, bestMove.col, currentPlayer, board);
+        const newBoard = board.map(r => [...r]);
+        newBoard[bestMove.row][bestMove.col] = currentPlayer;
+        flippable.forEach(({ row, col }) => {
+          newBoard[row][col] = currentPlayer;
+        });
+        setBoard(newBoard);
+        updateScores(newBoard);
+        setCurrentPlayer(getOpponent(currentPlayer));
       }
       setIsComputerThinking(false);
     }, 1000); // Simulate thinking time
-  }, [board, currentPlayer, calculateValidMoves, getFlippableStones, updateScores]);
+  }, [board, currentPlayer, getFlippableStones, updateScores]);
 
   useEffect(() => {
     if (!gameMode) return; // Don't run game logic until mode is selected
