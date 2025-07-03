@@ -7,6 +7,11 @@ type Player = 'black' | 'white';
 type CellValue = Player | 'empty';
 type BoardState = CellValue[][];
 
+interface Coordinate {
+  row: number;
+  col: number;
+}
+
 const initialBoard: BoardState = Array(8).fill(null).map(() => Array(8).fill('empty'));
 initialBoard[3][3] = 'white';
 initialBoard[3][4] = 'black';
@@ -26,7 +31,7 @@ const Game: React.FC = () => {
   const [whiteScore, setWhiteScore] = useState(2);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<Player | 'draw' | null>(null);
-  const [validMoves, setValidMoves] = useState<{ row: number; col: number }[]>([]);
+  const [validMoves, setValidMoves] = useState<Coordinate[]>([]);
   const [gameMode, setGameMode] = useState<'player-vs-player' | 'player-vs-computer' | null>(null);
   const [isComputerThinking, setIsComputerThinking] = useState(false);
 
@@ -36,14 +41,14 @@ const Game: React.FC = () => {
     return row >= 0 && row < 8 && col >= 0 && col < 8;
   };
 
-  const getFlippableStones = useCallback((r: number, c: number, player: Player, currentBoard: BoardState): { row: number; col: number }[] => {
+  const getFlippableStones = useCallback((r: number, c: number, player: Player, currentBoard: BoardState): Coordinate[] => {
     if (currentBoard[r][c] !== 'empty') return [];
 
     const opponent = getOpponent(player);
-    const flippable: { row: number; col: number }[] = [];
+    const flippable: Coordinate[] = [];
 
     for (const [dr, dc] of directions) {
-      const tempFlippable: { row: number; col: number }[] = [];
+      const tempFlippable: Coordinate[] = [];
       let row = r + dr;
       let col = c + dc;
 
@@ -60,8 +65,8 @@ const Game: React.FC = () => {
     return flippable;
   }, []);
 
-  const calculateValidMoves = useCallback((player: Player, currentBoard: BoardState): { row: number; col: number }[] => {
-    const moves: { row: number; col: number }[] = [];
+  const calculateValidMoves = useCallback((player: Player, currentBoard: BoardState): Coordinate[] => {
+    const moves: Coordinate[] = [];
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
         if (getFlippableStones(r, c, player, currentBoard).length > 0) {
@@ -123,7 +128,7 @@ const Game: React.FC = () => {
       const moves = calculateValidMoves(currentPlayer, board);
       if (moves.length > 0) {
         // Simple AI: choose the move that flips the most stones
-        let bestMove: { row: number; col: number } | null = null;
+        let bestMove: Coordinate | null = null;
         let maxFlippable = -1;
 
         for (const move of moves) {
